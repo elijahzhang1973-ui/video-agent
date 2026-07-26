@@ -1,10 +1,20 @@
 # Video Agent
 
-当前版本：**v0.1.1**
+当前版本：**v0.1.3**
 
 Video Agent 是一个运行在 Windows 本机的视频采集基础工程。当前稳定基线包含
-Playwright 可见浏览器控制、Chrome persistent Profile 复用、YouTube URL
+Playwright 可见浏览器控制、Chrome persistent Profile 复用、多平台URL
 校验、yt-dlp 下载、FFmpeg 音视频合并、metadata 和日志记录。
+
+v0.1.3 将入口校验扩展为多平台自动识别，不改变下载和浏览器机制。
+
+当前识别：
+
+- YouTube
+- X/Twitter
+- 小红书
+- Bilibili
+- TikTok
 
 ## 安装
 
@@ -38,7 +48,7 @@ C:\Users\minzh\AppData\Local\Python\bin\python.exe -m venv .venv
 命令行 URL 模式：
 
 ```powershell
-python main.py "YouTube_URL"
+python main.py "VIDEO_URL"
 ```
 
 交互模式：
@@ -47,21 +57,31 @@ python main.py "YouTube_URL"
 python main.py
 ```
 
+剪贴板模式：
+
+```powershell
+python main.py --clipboard
+```
+
+也可以先复制受支持平台的视频URL，再双击项目根目录的 `download.bat`。批处理会
+自动进入项目目录，调用 `.venv\Scripts\python.exe`，并在结束后保留窗口供
+查看下载文件路径。
+
 如果没有激活虚拟环境，Windows 下使用明确入口：
 
 ```powershell
-.\.venv\Scripts\python.exe main.py "YouTube_URL"
+.\.venv\Scripts\python.exe main.py "VIDEO_URL"
 .\.venv\Scripts\python.exe main.py
 ```
 
-无参数运行会打开可见 Chrome，可在窗口中手动登录 YouTube，然后在终端输入
-视频 URL。登录状态由本机 Profile 复用。经用户明确授权后，yt-dlp 会直接
+无参数运行会按既有机制打开可见Chrome和YouTube登录页，然后可在终端输入
+任一受支持平台的视频URL。登录状态由本机Profile复用。经用户明确授权后，yt-dlp会直接
 读取该本机 Profile，不生成 `cookies.txt`，也不把 Cookie 内容写入项目日志。
 
 当前配置使用本机已安装的 Chromium-based Chrome（`channel: chrome`）。
 如需改用 Playwright 自带 Chromium，先执行安装命令，再删除该配置项。
 
-下载结果按 YouTube 视频 ID 存入 `data/downloads/<video_id>/`：
+下载结果按媒体ID存入 `data/downloads/<media_id>/`：
 
 - 合并后的 MP4 视频
 - `metadata.json`
@@ -74,17 +94,20 @@ python main.py
 video-agent/
 ├── browser/                 # Playwright persistent browser
 ├── downloader/              # yt-dlp download and FFmpeg merge
+├── platform/detector.py     # Multi-platform URL detection
+├── utils/                   # Windows text clipboard reader
 ├── config/settings.yaml     # Browser and download settings
 ├── data/
 │   ├── downloads/           # Generated media and metadata (ignored)
 │   └── logs/                # Runtime logs (ignored)
 ├── CHANGELOG.md
 ├── VERSION
+├── download.bat             # Double-click clipboard download entry
 ├── requirements.txt
 └── main.py                  # CLI and interactive entry point
 ```
 
 ## 当前能力边界
 
-v0.1.1 只负责单个 YouTube URL 的浏览器登录状态复用、校验和下载，不包含
+v0.1.3 只负责单个受支持平台URL的识别、校验和下载，不包含
 频道扫描、Whisper、GPT、Agent、MCP、自动剪辑、发布或调度。

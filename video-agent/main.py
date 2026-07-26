@@ -1,26 +1,45 @@
-"""CLI and interactive entry point for video-agent v0.1.1."""
+"""Multi-platform URL entry point for video-agent v0.1.3."""
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 import yaml
 
 from browser import PlaywrightBrowser
 from downloader import YtDlpDownloader
+from utils import read_clipboard_text
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-VERSION = "0.1.1"
-YOUTUBE_HOSTS = {
-    "youtube.com",
-    "www.youtube.com",
-    "m.youtube.com",
-    "music.youtube.com",
-    "youtu.be",
-}
+VERSION = "0.1.3"
+
+
+def _load_platform_detector():
+    """Load platform/detector.py without shadowing Python's platform module."""
+    detector_path = PROJECT_ROOT / "platform" / "detector.py"
+    spec = importlib.util.spec_from_file_location(
+        "video_agent_platform_detector",
+        detector_path,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载平台检测模块：{detector_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_platform_detector = _load_platform_detector()
+
+
+class PlatformEntryDownloader(YtDlpDownloader):
+    """Use detector validation while preserving the downloader implementation."""
+
+    @staticmethod
+    def validate_youtube_url(url: str) -> str:
+        return url.strip()
 
 
 def load_settings() -> dict:
@@ -34,35 +53,20 @@ def load_settings() -> dict:
 
 def command_line_url(argv: list[str]) -> str | None:
     if len(argv) > 1:
-        raise ValueError("参数错误：只接受一个 YouTube 视频 URL")
+        raise ValueError("参数错误：只接受一个受支持平台的视频URL")
+    if argv == ["--clipboard"]:
+        clipboard_text = read_clipboard_text()
+        if not clipboard_text.strip():
+            raise ValueError("未检测到剪贴板中的视频URL。")
+        return clipboard_text
+    if argv and argv[0].startswith("-"):
+        raise ValueError(f"未知参数：{argv[0]}")
     return argv[0] if argv else None
 
 
 def validate_video_url(raw_url: str) -> str:
-    url = raw_url.strip()
-    if not url:
-        raise ValueError("URL不能为空")
-
-    parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise ValueError("无效URL：请输入以 http:// 或 https:// 开头的完整地址")
-
-    hostname = parsed.hostname.lower()
-    if hostname not in YOUTUBE_HOSTS:
-        raise ValueError("非YouTube地址：仅支持 youtube.com 或 youtu.be 视频链接")
-
-    path = parsed.path.strip("/")
-    is_video_url = False
-    if hostname == "youtu.be":
-        is_video_url = bool(path)
-    elif parsed.path.rstrip("/") == "/watch":
-        is_video_url = bool(parse_qs(parsed.query).get("v", [""])[0])
-    else:
-        first_segment = path.split("/", 1)[0] if path else ""
-        is_video_url = first_segment in {"shorts", "live", "embed"} and "/" in path
-
-    if not is_video_url:
-        raise ValueError("无效YouTube URL：链接中未找到视频ID")
+    """Backward-compatible URL validator returning the normalized URL."""
+    url, _ = _platform_detector.validate_platform_url(raw_url)
     return url
 
 
@@ -70,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     settings = load_settings()
     browser = PlaywrightBrowser(settings["browser"], PROJECT_ROOT)
-    downloader = YtDlpDownloader(settings["download"], PROJECT_ROOT)
+    downloader = PlatformEntryDownloader(settings["download"], PROJECT_ROOT)
 
     try:
         url_argument = command_line_url(argv)
@@ -83,11 +87,12 @@ def main(argv: list[str] | None = None) -> int:
                 print("已取消。")
                 return 0
 
-        url = validate_video_url(url_argument)
+        url, platform_name = _platform_detector.validate_platform_url(url_argument)
         # Chromium locks parts of its profile on Windows. Close it before
         # yt-dlp reads the authorized local login state.
         browser.close()
         print("\n开始下载：")
+        print(f"平台：{platform_name}")
         print(f"URL：{url}")
 
         result = downloader.download(url)
