@@ -1,0 +1,19 @@
+browser:
+  # Must remain outside the repository. Environment variables are expanded.
+  user_data_dir: &browser_profile "%LOCALAPPDATA%/video-agent/browser-profile"
+  headless: false
+  # Reuse locally installed Chromium-based Chrome; remove this after installing
+  # Playwright's bundled Chromium if preferred.
+  channel: "chrome"
+  timeout_ms: 30000
+
+download:
+  output_dir: "data/downloads"
+  log_dir: "data/logs"
+  format: "bestvideo*+bestaudio/best"
+  retries: 5
+  socket_timeout: 30
+  cookies_from_browser:
+    enabled: true
+    browser: "chrome"
+    profile: *browser_profile
