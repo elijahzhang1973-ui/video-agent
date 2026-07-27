@@ -7,9 +7,11 @@ browser:
   channel: "chrome"
   timeout_ms: 30000
 
+runtime_dir: "../../Media/video-downloads/runtime"
+
 download:
-  output_dir: "data/downloads"
-  log_dir: "data/logs"
+  output_dir: "../../Media/video-downloads"
+  log_dir: "../../Media/video-downloads/logs"
   format: "bestvideo*+bestaudio/best"
   retries: 5
   socket_timeout: 30

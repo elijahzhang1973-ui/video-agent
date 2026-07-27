@@ -21,6 +21,10 @@ data/downloads/*
 data/logs/*
 !data/logs/.gitkeep
 
+# Runtime task and registry state must not enter source control.
+runtime/
+*.runtime.json
+
 # Browser profiles must remain outside this repository.
 browser-profile/
 **/browser-profile/

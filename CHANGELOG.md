@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.2.0
+
+开发日期：2026-07-27
+
+## 新增
+
+- JSON Task Queue
+- 顺序执行的 Download Worker
+- JSON Asset Registry 与重复资产检查
+- `python main.py --add VIDEO_URL` 任务添加入口
+- `python main.py --queue` 队列执行入口
+
+## 保持
+
+- 单URL、剪贴板和 `download.bat` 入口
+- 多平台URL识别
+- yt-dlp下载核心与参数
+- Playwright persistent Profile机制
+- 浏览器登录逻辑
+
 ## v0.1.3
 
 发布日期：2026-07-26

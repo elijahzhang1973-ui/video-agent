@@ -1,12 +1,13 @@
 # Video Agent
 
-当前版本：**v0.1.3**
+当前版本：**v0.2.0（开发中）**
 
 Video Agent 是一个运行在 Windows 本机的视频采集基础工程。当前稳定基线包含
 Playwright 可见浏览器控制、Chrome persistent Profile 复用、多平台URL
 校验、yt-dlp 下载、FFmpeg 音视频合并、metadata 和日志记录。
 
-v0.1.3 将入口校验扩展为多平台自动识别，不改变下载和浏览器机制。
+v0.2.0 在现有下载链路上增加JSON任务队列、顺序下载Worker和资产登记，
+不改变下载器核心及浏览器机制。
 
 当前识别：
 
@@ -67,6 +68,18 @@ python main.py --clipboard
 自动进入项目目录，调用 `.venv\Scripts\python.exe`，并在结束后保留窗口供
 查看下载文件路径。
 
+添加下载任务：
+
+```powershell
+python main.py --add "VIDEO_URL"
+```
+
+执行全部pending任务：
+
+```powershell
+python main.py --queue
+```
+
 如果没有激活虚拟环境，Windows 下使用明确入口：
 
 ```powershell
@@ -81,12 +94,15 @@ python main.py --clipboard
 当前配置使用本机已安装的 Chromium-based Chrome（`channel: chrome`）。
 如需改用 Playwright 自带 Chromium，先执行安装命令，再删除该配置项。
 
-下载结果按媒体ID存入 `data/downloads/<media_id>/`：
+下载结果按媒体ID存入 `D:\Media\video-downloads\<media_id>\`：
 
 - 合并后的 MP4 视频
 - `metadata.json`
 
-日志写入 `data/logs/`。
+日志写入 `D:\Media\video-downloads\logs\`。任务状态保存在
+`D:\Media\video-downloads\runtime\tasks.json`，资产索引保存在
+`D:\Media\video-downloads\runtime\registry.json`。仓库中的
+`task_queue/tasks.example.json` 和 `assets/registry.example.json` 只作为空模板。
 
 ## 项目结构
 
@@ -96,10 +112,10 @@ video-agent/
 ├── downloader/              # yt-dlp download and FFmpeg merge
 ├── platform/detector.py     # Multi-platform URL detection
 ├── utils/                   # Windows text clipboard reader
+├── task_queue/              # JSON task queue code and empty template
+├── worker/                  # Sequential download worker
+├── assets/                  # Asset registry code and empty template
 ├── config/settings.yaml     # Browser and download settings
-├── data/
-│   ├── downloads/           # Generated media and metadata (ignored)
-│   └── logs/                # Runtime logs (ignored)
 ├── CHANGELOG.md
 ├── VERSION
 ├── download.bat             # Double-click clipboard download entry
@@ -109,5 +125,5 @@ video-agent/
 
 ## 当前能力边界
 
-v0.1.3 只负责单个受支持平台URL的识别、校验和下载，不包含
-频道扫描、Whisper、GPT、Agent、MCP、自动剪辑、发布或调度。
+v0.2.0 只负责手动添加任务、顺序执行下载和登记资产，不包含频道扫描、
+自动发现、Whisper、GPT、Agent、MCP、Web UI、数据库服务器或自动调度。
